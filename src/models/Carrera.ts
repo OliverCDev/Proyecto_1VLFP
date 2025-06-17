@@ -1,33 +1,32 @@
 import { Semestre } from "./Semestre";
 
 class Carrera {
-    Nombre: string;
-    Semestres: Semestre[];
+    nombre: string;
+    semestres: Semestre[];
 
-    constructor(Nombre:string,Semestres: Semestre[]){
-        this.Nombre=Nombre;
-        this.Semestres = Semestres;
-    }
-
-    getNombre():string{
-       return this.getNombre();
+    constructor(nombre: string, semestres: Semestre[]) {
+        this.nombre = nombre;
+        this.semestres = semestres;
     }
 
-    setNombre(Nombre:string):void{
-        this.Nombre=Nombre;
+    getNombre(): string {
+        return this.nombre;
     }
-    getSemestres():Semestre[]{
-        return this.Semestres;
+    setNombre(nombre: string): void {
+        this.nombre = nombre;
     }
-    setSemestres(Semestres: Semestre[]):void{
-        this.Semestres = Semestres
+    getSemestres(): Semestre[] {
+        return this.semestres;
     }
-
+    setSemestres(semestres: Semestre[]): void {
+        this.semestres = semestres;
+    }
     addSemestre(semestre: Semestre): void {
-    const existe = this.Semestres.some(s => s.Numero === semestre.Numero);
-    if (!existe) {
-        this.Semestres.push(semestre);
-    }
+        const existe = this.semestres.some(s => s.getNumero() === semestre.getNumero());
+        if (!existe) {
+            this.semestres.push(semestre);
+        }
     }
 }
-export { Carrera }
+
+export { Carrera };

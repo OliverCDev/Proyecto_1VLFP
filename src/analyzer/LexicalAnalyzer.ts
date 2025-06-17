@@ -8,23 +8,18 @@ const RESERVED_WORDS: string[] = [
   "Area",
   "Prerrequisitos",
 ];
+
 class LexicalAnalyzer {
   private row: number;
   private column: number;
-  private auxChar: string;
   private auxWord: string;
-  private state: number;
-  private auxNum: number;
   private tokenList: Token[];
   private errorList: Token[];
 
   constructor() {
     this.row = 1;
     this.column = 0;
-    this.auxChar = "";
     this.auxWord = "";
-    this.state = 0;
-    this.auxNum = 0;
     this.tokenList = [];
     this.errorList = [];
   }
@@ -32,236 +27,104 @@ class LexicalAnalyzer {
   scanner(input: string) {
     input += "#";
     let char: string;
-    let count: number = 0;
-    for (let i: number = 0; i < input.length; i++) {
+
+    for (let i = 0; i < input.length; i++) {
       char = input[i];
-      switch (this.state) {
-        case 0:
-          switch (char) {
-            case ",":
-              this.state = 1;
-              this.addCharacter(char);
-              break;
-            case "{":
-              this.state = 2;
-              this.addCharacter(char);
-              break;
-            case '"':
-              if (count == 1) {
-                this.addCharacterWord(char);
-                this.state = 11;
-              } else {
-                this.addCharacterWord(char);
-              }
-              count++;
-              break;
-            case "[":
-              this.state = 4;
-              this.addCharacter(char);
-              break;
-            case "]":
-              this.state = 5;
-              this.addCharacter(char);
-              break;
-            case ":":
-              this.state = 7;
-              this.addCharacter(char);
-              break;
-            case ";":
-              this.state = 9;
-              this.addCharacter(char);
-              break;
-            case " ":
-              if (count == 1) {
-                this.addCharacterWord(char);
-              }
-              this.column++;
-              break;
-            case "\n":
-              console.log("Fila: " + this.row);
-              this.row += 1;
-              this.column = 0;
-              console.log("Nueva linea --------------");
-              console.log("Fila: " + this.row);
-              break;
-            case "\r":
-              break;
-            case "\t":
-              this.column += 4;
-              break;
-            case "}":
-              this.state = 12;
-              this.addCharacter(char);
-              break;
-            case "(":
-              this.state = 13;
-              this.addCharacter(char);
-              break;
-            case ")":
-              this.state = 14;
-              this.addCharacter(char);
-              break;
-            default:
-              if (/\d/.test(char)) {
-                if (count == 1) {
-                  this.addCharacterWord(char);
-                  this.state = 11;
-                }
-                this.addCharacter(char);
-                if (input[i + 1] == ";") {
-                  this.state = 10;
-                }
-                break;
-              } else if (/[a-zA-Z]/.test(char)) {
-                console.log("Caracter: " + char);
-                this.state = 11;
-                break;
-              } else if (char == "#" && i == input.length - 1) {
-                // Fin del análisis
-                console.log("Analyze Finished");
-              } else {
-                console.log("Caracter: " + char + "---- Contador: " + count);
-                // Error Léxico
-                this.addError(Type.UNKNOW, char, this.row, this.column);
-                this.clear();
-                this.clearWord();
-                this.column++;
-              }
-              break;
+
+      if (char === '\n') {
+        this.addPendingWord();
+        this.row++;
+        this.column = 0;
+        continue;
+      } else if (char === '\r') {
+        continue;
+      } else if (char === '\t') {
+        this.column += 4;
+        continue;
+      } else if (char === ' ' || char === '#') {
+        this.addPendingWord();
+        this.column++;
+        continue;
+      }
+
+      // Si es letra o número, seguimos formando palabras/números
+      if (/[a-zA-Z0-9]/.test(char)) {
+        this.auxWord += char;
+        this.column++;
+        continue;
+      }
+
+      // Si encontramos delimitador, primero verificamos si hay palabra pendiente
+      this.addPendingWord();
+
+      // Delimitadores
+      switch (char) {
+        case ',':
+          this.addToken(Type.COMA, char);
+          break;
+        case '{':
+          this.addToken(Type.LLAVE_ABRE, char);
+          break;
+        case '}':
+          this.addToken(Type.LLAVE_CIERRA, char);
+          break;
+        case '[':
+          this.addToken(Type.CORCHETE_ABRE, char);
+          break;
+        case ']':
+          this.addToken(Type.CORCHETE_CIERRA, char);
+          break;
+        case ':':
+          this.addToken(Type.DOS_PUNTOS, char);
+          break;
+        case ';':
+          this.addToken(Type.PUNTO_COMA, char);
+          break;
+        case '(':
+          this.addToken(Type.PARENTESIS_ABRE, char);
+          break;
+        case ')':
+          this.addToken(Type.PARENTESIS_CIERRA, char);
+          break;
+        case '"':
+          // iniciamos captura de cadena de texto
+          let text = '"';
+          this.column++;
+          i++;
+          while (i < input.length && input[i] !== '"') {
+            text += input[i];
+            i++;
+            this.column++;
           }
+          text += '"';
+          this.addToken(Type.CADENA_DE_TEXTO, text);
+          this.column++;
           break;
-        case 1: // LLAVE_ABRE
-          this.addToken(Type.COMA, this.auxChar, this.row, this.column);
-          this.clear();
-          i--;
-          break;
-        case 2: // LLAVE_ABRE
-          this.addToken(Type.LLAVE_ABRE, this.auxChar, this.row, this.column);
-          this.clear();
-          i--;
-          break;
-        case 4: // CORCHETE_ABRE
-          this.addToken(
-            Type.CORCHETE_ABRE,
-            this.auxChar,
-            this.row,
-            this.column
-          );
-          this.clear();
-          i--;
-          break;
-        case 5: // CORCHETE_CIERRA
-          this.addToken(
-            Type.CORCHETE_CIERRA,
-            this.auxChar,
-            this.row,
-            this.column
-          );
-          this.clear();
-          i--;
-          break;
-        case 7: // DOS_PUNTOS
-          this.addToken(Type.DOS_PUNTOS, this.auxChar, this.row, this.column);
-          this.clear();
-          i--;
-          break;
-        case 9: // PUNTO_COMA
-          this.addToken(Type.PUNTO_COMA, this.auxChar, this.row, this.column);
-          this.clear();
-          i--;
-          break;
-        case 10: // NUMERO
-          this.addToken(Type.NUMERO, this.auxChar, this.row, this.column);
-          this.clear();
-          i--;
-          break;
-        case 11: // PALABRA_RESERVADA O CADENA_DE_TEXTO
-          console.log("AuxWord: " + this.auxWord);
-          if (
-            (input[i] == ":" ||
-            (input[i] == " " )&& RESERVED_WORDS.includes(this.auxWord))
-          ) {
-            console.log("----------------Nueva Palabra -------------------");
-            this.addToken(
-              Type.PALABRA_RESERVADA,
-              this.auxWord,
-              this.row,
-              this.column
-            );
-            console.log("Se agrego la palabra: ", this.auxWord);
-            this.clearWord();
-            count = 0;
-          } else if (input[i] == '"') {
-            // **Aquí es el problema real**
-            this.addCharacterWord(char); // <-- Agregamos la comilla de cierre
-            console.log("----------------Nueva Palabra -------------------");
-            this.addToken(
-              Type.CADENA_DE_TEXTO,
-              this.auxWord,
-              this.row,
-              this.column
-            );
-            console.log("Se agrego la palabra: ", this.auxWord);
-            this.clearWord();
-            count = 0;
-          } else {
-            // Si no es cierre ni separador, seguimos acumulando caracteres normales
-            this.addCharacterWord(char);
-          }
-          this.clear();
-          i--;
-          break;
-        case 12: // LLAVE_CIERRA
-          this.addToken(Type.LLAVE_CIERRA, this.auxChar, this.row, this.column);
-          this.clear();
-          i--;
-          break;
-        case 13: // PARENTESIS_CIERRA
-          this.addToken(
-            Type.PARENTESIS_ABRE,
-            this.auxChar,
-            this.row,
-            this.column
-          );
-          this.clear();
-          i--;
-          break;
-        case 14: // LLAVE_CIERRA
-          this.addToken(
-            Type.PARENTESIS_CIERRA,
-            this.auxChar,
-            this.row,
-            this.column
-          );
-          this.clear();
-          i--;
+        default:
+          this.addError(Type.UNKNOW, char);
           break;
       }
+      this.column++;
     }
     return this.tokenList;
   }
-  addCharacterWord(char: string) {
-    this.auxWord += char;
-    console.log("Se agrega la letra " + char + " a la cadena " + this.auxWord);
-    this.column++;
-  }
-  clear() {
-    this.state = 0;
-    this.auxChar = "";
-  }
-  clearWord() {
-    this.auxWord = "";
-  }
-  addToken(type: Type, lexeme: string, row: number, column: number) {
-    this.tokenList.push(new Token(type, lexeme, row, column));
+
+  private addPendingWord() {
+    if (this.auxWord.length > 0) {
+      const type = RESERVED_WORDS.includes(this.auxWord)
+        ? Type.PALABRA_RESERVADA
+        : (/^\d+$/.test(this.auxWord) ? Type.NUMERO : Type.UNKNOW);
+      this.addToken(type, this.auxWord);
+      this.auxWord = "";
+    }
   }
 
-  private addCharacter(char: string) {
-    this.auxChar += char;
-    this.column++;
+  private addToken(type: Type, lexeme: string) {
+    this.tokenList.push(new Token(type, lexeme, this.row, this.column));
   }
-  private addError(type: Type, lexeme: string, row: number, column: number) {
-    this.errorList.push(new Token(type, lexeme, row, column));
+
+  private addError(type: Type, lexeme: string) {
+    this.errorList.push(new Token(type, lexeme, this.row, this.column));
   }
 
   getErroList() {

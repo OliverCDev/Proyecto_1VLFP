@@ -12,7 +12,10 @@ export const analyze = (req: Request, res: Response) => {
 
   let tokens  = lexicalAnalyzer.scanner(input);
   let errores = lexicalAnalyzer.getErroList();
-  carreras = [];
+  
+  if(errores.length == 0){
+    carreras = construirCarreras(tokens);
+  }
   
  res.json({
     tokens: tokens,
@@ -27,7 +30,7 @@ export const home = (req: Request, res: Response) => {
   res.render("index");
 };
 
-export const mostrarJugadores = (req: Request, res: Response) => {
+export const mostrarCarreras = (req: Request, res: Response) => {
     if (carreras && carreras.length > 0) {
         res.render("carreras", { carreras: carreras });
     } else {

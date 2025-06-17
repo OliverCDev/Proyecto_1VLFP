@@ -1,31 +1,32 @@
 import { Curso } from "./Curso";
 
 class Semestre {
-    Numero: number;
-    Cursos: Curso[];
+    numero: number;
+    cursos: Curso[];
 
-    constructor(Numero: number, Cursos: Curso[]){
-        this.Numero = Numero;
-        this.Cursos = Cursos;
+    constructor(numero: number, cursos: Curso[]) {
+        this.numero = numero;
+        this.cursos = cursos;
     }
-    getNumbero(): number {
-        return this.Numero;
-    }
-    getCursos(): Curso[] {
-        return this.Cursos;
+
+    getNumero(): number {
+        return this.numero;
     }
     setNumero(numero: number): void {
-        this.Numero = numero;
+        this.numero = numero;
     }
-    setCursos(cursos :Curso[]): void {
-        this.Cursos = cursos;
+    getCursos(): Curso[] {
+        return this.cursos;
     }
-    addPokemon(curso: Curso): void {
-        const existe = this.Cursos.some(c=> c.getNumero() === curso.getNumero())
-        if(!existe){
-            this.Cursos.push(curso);
+    setCursos(cursos: Curso[]): void {
+        this.cursos = cursos;
+    }
+    addCurso(curso: Curso): void {
+        const existe = this.cursos.some(c => c.getNumero() === curso.getNumero());
+        if (!existe) {
+            this.cursos.push(curso);
         }
     }
 }
 
-export { Semestre};
+export { Semestre };
