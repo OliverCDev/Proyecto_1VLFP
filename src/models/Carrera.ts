@@ -1,12 +1,21 @@
 import { Semestre } from "./Semestre";
 
 class Carrera {
+    Nombre: string;
     Semestres: Semestre[];
 
-    constructor(Semestres: Semestre[]){
-        this.Semestres = Semestres
+    constructor(Nombre:string,Semestres: Semestre[]){
+        this.Nombre=Nombre;
+        this.Semestres = Semestres;
     }
 
+    getNombre():string{
+       return this.getNombre();
+    }
+
+    setNombre(Nombre:string):void{
+        this.Nombre=Nombre;
+    }
     getSemestres():Semestre[]{
         return this.Semestres;
     }
@@ -21,3 +30,4 @@ class Carrera {
     }
     }
 }
+export { Carrera }

@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import { LexicalAnalyzer } from "../analyzer/LexicalAnalyzer";
-import { construirJugadores } from "../analyzer/ConstructorPlayer";
-import { Jugador } from "../models/Semestre";
+import { construirCarreras } from "../analyzer/Constructor";
+import { Carrera } from "../models/Carrera";
 
-let jugadores: Jugador[];
+
+let carreras: Carrera[];
 export const analyze = (req: Request, res: Response) => {
   const input = req.body.editorTexto;
   console.log(input);
@@ -11,19 +12,12 @@ export const analyze = (req: Request, res: Response) => {
 
   let tokens  = lexicalAnalyzer.scanner(input);
   let errores = lexicalAnalyzer.getErroList();
-  jugadores = [];
-  if (errores.length == 0) {
-      jugadores = construirJugadores(tokens);
-      jugadores.forEach((jugador)=>{
-        jugador.getPokemons().sort((a, b) => b.getIvs() - a.getIvs());
-        const top6Pokemons = jugador.getPokemons().slice(0, 6);
-        jugador.setPokemons(top6Pokemons);
-      })
-  }
+  carreras = [];
+  
  res.json({
     tokens: tokens,
     errores: errores,
-    jugadores: jugadores
+    carreras: carreras
   });
 }
 
@@ -34,10 +28,10 @@ export const home = (req: Request, res: Response) => {
 };
 
 export const mostrarJugadores = (req: Request, res: Response) => {
-    if (jugadores && jugadores.length > 0) {
-        res.render("jugadores", { jugadores: jugadores });
+    if (carreras && carreras.length > 0) {
+        res.render("carreras", { carreras: carreras });
     } else {
-        res.render("jugadores", { jugadores: [] });
+        res.render("carreras", { carreras: [] });
     }
 }
 

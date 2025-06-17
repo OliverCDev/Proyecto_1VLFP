@@ -1,16 +1,12 @@
 import { Token, Type } from "./Token";
 
 const RESERVED_WORDS: string[] = [
-  "Jugador",
-  "salud",
-  "atque",
-  "defensa",
-  "agua",
-  "dragon",
-  "planta",
-  "psiquico",
-  "fuego",
-  "normal",
+  "Carrera",
+  "Semestre",
+  "Curso",
+  "Nombre",
+  "Area",
+  "Prerrequisitos",
 ];
 class LexicalAnalyzer {
   private row: number;
@@ -42,13 +38,21 @@ class LexicalAnalyzer {
       switch (this.state) {
         case 0:
           switch (char) {
+            case ",":
+              this.state = 1;
+              this.addCharacter(char);
+              break;
             case "{":
               this.state = 2;
               this.addCharacter(char);
               break;
             case '"':
-              this.state = 3;
-              this.addCharacter(char);
+              if (count == 1) {
+                this.addCharacterWord(char);
+                this.state = 11;
+              } else {
+                this.addCharacterWord(char);
+              }
               count++;
               break;
             case "[":
@@ -60,26 +64,17 @@ class LexicalAnalyzer {
               this.addCharacter(char);
               break;
             case ":":
-              if (input[i + 1] == "=") {
-                this.state = 6;
-                this.addCharacter(char + "=");
-                this.column++;
-              } else {
-                this.state = 7;
-                this.addCharacter(char);
-              }
-              break;
-            case "=":
-              if (input[i - 1] != ":") {
-                this.state = 8;
-                this.addCharacter(char);
-              }
+              this.state = 7;
+              this.addCharacter(char);
               break;
             case ";":
               this.state = 9;
               this.addCharacter(char);
               break;
             case " ":
+              if (count == 1) {
+                this.addCharacterWord(char);
+              }
               this.column++;
               break;
             case "\n":
@@ -111,16 +106,15 @@ class LexicalAnalyzer {
                 if (count == 1) {
                   this.addCharacterWord(char);
                   this.state = 11;
-                } 
+                }
                 this.addCharacter(char);
                 if (input[i + 1] == ";") {
                   this.state = 10;
                 }
                 break;
-              } else if (/[a-zA-Z]/.test(char) || count == 1) {
+              } else if (/[a-zA-Z]/.test(char)) {
                 console.log("Caracter: " + char);
                 this.state = 11;
-                this.addCharacterWord(char);
                 break;
               } else if (char == "#" && i == input.length - 1) {
                 // Fin del análisis
@@ -136,13 +130,13 @@ class LexicalAnalyzer {
               break;
           }
           break;
-        case 2: // LLAVE_ABRE
-          this.addToken(Type.LLAVE_ABRE, this.auxChar, this.row, this.column);
+        case 1: // LLAVE_ABRE
+          this.addToken(Type.COMA, this.auxChar, this.row, this.column);
           this.clear();
           i--;
           break;
-        case 3: // COMILLAS
-          this.addToken(Type.COMILLAS, this.auxChar, this.row, this.column);
+        case 2: // LLAVE_ABRE
+          this.addToken(Type.LLAVE_ABRE, this.auxChar, this.row, this.column);
           this.clear();
           i--;
           break;
@@ -166,18 +160,8 @@ class LexicalAnalyzer {
           this.clear();
           i--;
           break;
-        case 6: // STATS_ABRE
-          this.addToken(Type.STATS_ABRE, this.auxChar, this.row, this.column);
-          this.clear();
-          i--;
-          break;
         case 7: // DOS_PUNTOS
           this.addToken(Type.DOS_PUNTOS, this.auxChar, this.row, this.column);
-          this.clear();
-          i--;
-          break;
-        case 8: // IGUAL
-          this.addToken(Type.IGUAL, this.auxChar, this.row, this.column);
           this.clear();
           i--;
           break;
@@ -192,30 +176,37 @@ class LexicalAnalyzer {
           i--;
           break;
         case 11: // PALABRA_RESERVADA O CADENA_DE_TEXTO
-          console.log("Columna: " + this.column);
           console.log("AuxWord: " + this.auxWord);
           if (
-            input[i] == ":" ||
-            input[i] == "]" ||
-            (input[i] == " " && RESERVED_WORDS.includes(this.auxWord))
+            (input[i] == ":" ||
+            (input[i] == " " )&& RESERVED_WORDS.includes(this.auxWord))
           ) {
+            console.log("----------------Nueva Palabra -------------------");
             this.addToken(
               Type.PALABRA_RESERVADA,
               this.auxWord,
               this.row,
               this.column
             );
+            console.log("Se agrego la palabra: ", this.auxWord);
             this.clearWord();
             count = 0;
           } else if (input[i] == '"') {
+            // **Aquí es el problema real**
+            this.addCharacterWord(char); // <-- Agregamos la comilla de cierre
+            console.log("----------------Nueva Palabra -------------------");
             this.addToken(
               Type.CADENA_DE_TEXTO,
               this.auxWord,
               this.row,
               this.column
             );
+            console.log("Se agrego la palabra: ", this.auxWord);
             this.clearWord();
             count = 0;
+          } else {
+            // Si no es cierre ni separador, seguimos acumulando caracteres normales
+            this.addCharacterWord(char);
           }
           this.clear();
           i--;
