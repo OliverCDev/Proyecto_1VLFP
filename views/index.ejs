@@ -9,6 +9,13 @@
     .cadena-texto { color: orange; }
     .numero { color: purple; }
     .otros { color: black; }
+    #textoResaltado {
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
   </style>
 </head>
 <body>
@@ -41,11 +48,13 @@
 
     <form id="analizarForm">
       <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-12">
           <div class="mb-3">
             <textarea id="editorTexto" name="editorTexto" class="form-control" rows="15" placeholder="Escribe aquí tu código..."></textarea>
+            <div id="textoResaltado" class="form-control" style="display: none;"></div>
           </div>
           <button type="submit" class="btn btn-primary">Analizar</button>
+          <button type="button" class="btn btn-secondary" style="display: none;" id="btn-editar" onclick="volverAEditar()">Volver a editar</button>
         </div>
       </div>
     </form>
@@ -66,14 +75,6 @@
         <tbody id="tablaTokensBody"></tbody>
       </table>
     </div>
-
-    <!-- BLOQUE DE RESALTADO -->
-    <div id="resaltadoTokensContainer" style="display: none;">
-      <hr>
-      <h2 class="mt-5">Texto Analizado con Colores</h2>
-      <div id="textoResaltado" style="white-space: pre-wrap; font-family: monospace; font-size: 16px; border: 1px solid #ccc; padding: 10px;"></div>
-    </div>
-
   </div>
 
   <input type="file" id="fileInput" accept=".plfp" style="display: none;" onchange="cargarArchivo(event)">
@@ -92,6 +93,7 @@
       .then(res => res.json())
       .then(data => {
         if (data.tokens && data.tokens.length > 0) {
+          // Tabla de tokens
           const tbody = document.getElementById("tablaTokensBody");
           tbody.innerHTML = "";
           data.tokens.forEach((token, i) => {
@@ -106,24 +108,36 @@
           });
           document.getElementById("tablaTokensContainer").style.display = "block";
 
-          // GENERAMOS EL RESALTADO DE COLORES
-          const contenedorResaltado = document.getElementById("resaltadoTokensContainer");
-          const divTexto = document.getElementById("textoResaltado");
-          divTexto.innerHTML = "";
+          
+          const textoOriginal = texto;
+          const tokens = data.tokens;
+          let resultadoHTML = "";
+          let i = 0, t = 0;
 
-          data.tokens.forEach(token => {
-            let span = document.createElement("span");
-            switch (token.typeTokenString) {
-              case "PALABRA_RESERVADA": span.className = "palabra-reservada"; break;
-              case "CADENA_DE_TEXTO": span.className = "cadena-texto"; break;
-              case "NUMERO": span.className = "numero"; break;
-              default: span.className = "otros";
+          while (i < textoOriginal.length) {
+            if (t < tokens.length && textoOriginal.startsWith(tokens[t].lexema, i)) {
+              let clase = "otros";
+              switch (tokens[t].typeTokenString) {
+                case "PALABRA_RESERVADA": clase = "palabra-reservada"; break;
+                case "CADENA_DE_TEXTO": clase = "cadena-texto"; break;
+                case "NUMERO": clase = "numero"; break;
+              }
+              const safeLexema = tokens[t].lexema.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+              resultadoHTML += `<span class="${clase}">${safeLexema}</span>`;
+              i += tokens[t].lexema.length;
+              t++;
+            } else {
+              const char = textoOriginal[i];
+              resultadoHTML += char === "<" ? "&lt;" : (char === ">" ? "&gt;" : char);
+              i++;
             }
-            span.textContent = token.lexema;
-            divTexto.appendChild(span);
-          });
+          }
 
-          contenedorResaltado.style.display = "block";
+          const divTexto = document.getElementById("textoResaltado");
+          divTexto.innerHTML = resultadoHTML;
+          divTexto.style.display = "block";
+          document.getElementById("editorTexto").style.display = "none";
+          document.getElementById("btn-editar").style.display = "inline-block";
         }
 
         if (data.carreras && (!data.errores || data.errores.length === 0)) {
@@ -142,12 +156,20 @@
       });
     });
 
+    function volverAEditar() {
+      document.getElementById("textoResaltado").style.display = "none";
+      document.getElementById("editorTexto").style.display = "block";
+      document.getElementById("btn-editar").style.display = "none";
+    }
+
     function limpiarEditor() {
       document.getElementById("editorTexto").value = "";
       document.getElementById("tablaTokensBody").innerHTML = "";
       document.getElementById("tablaTokensContainer").style.display = "none";
       document.getElementById("textoResaltado").innerHTML = "";
-      document.getElementById("resaltadoTokensContainer").style.display = "none";
+      document.getElementById("textoResaltado").style.display = "none";
+      document.getElementById("editorTexto").style.display = "block";
+      document.getElementById("btn-editar").style.display = "none";
       localStorage.removeItem("textoAnalizado");
       localStorage.removeItem("carreras");
       localStorage.removeItem("errores");
@@ -170,7 +192,7 @@
       const blob = new Blob([contenido], { type: "text/plain;charset=utf-8" });
       const enlace = document.createElement("a");
       enlace.href = URL.createObjectURL(blob);
-      enlace.download = "archivo.pklfp";
+      enlace.download = "archivo.plfp";
       document.body.appendChild(enlace);
       enlace.click();
       document.body.removeChild(enlace);
